@@ -73,4 +73,27 @@ function setupSheets() {
     );
     summarySheet.getRange('F2').setFormula('=IF(A2="","",NOW())');
   }
+
+  let clickSummary = ss.getSheetByName('Click_Summary');
+  if (!clickSummary) {
+    clickSummary = ss.insertSheet('Click_Summary');
+    clickSummary.appendRow([
+      'Ref', 'Clicks_120d', 'Conversions_120d', 'Revenue_120d', 'Last_Updated',
+    ]);
+    clickSummary.getRange('A1:E1').setFontWeight('bold');
+
+    clickSummary.getRange('A2').setFormula(
+      '=SORT(UNIQUE(FILTER(Log!D2:D, Log!D2:D<>"")))'
+    );
+    clickSummary.getRange('B2').setFormula(
+      '=ARRAYFORMULA(IF(A2:A="","",COUNTIFS(Log!$D:$D,A2:A,Log!$B:$B,"click",Log!$A:$A,">="&TODAY()-120)))'
+    );
+    clickSummary.getRange('C2').setFormula(
+      '=ARRAYFORMULA(IF(A2:A="","",COUNTIFS(Log!$D:$D,A2:A,Log!$B:$B,"conversion",Log!$A:$A,">="&TODAY()-120)))'
+    );
+    clickSummary.getRange('D2').setFormula(
+      '=ARRAYFORMULA(IF(A2:A="","",SUMIFS(Log!$G:$G,Log!$D:$D,A2:A,Log!$B:$B,"conversion",Log!$A:$A,">="&TODAY()-120)))'
+    );
+    clickSummary.getRange('E2').setFormula('=IF(A2="","",NOW())');
+  }
 }

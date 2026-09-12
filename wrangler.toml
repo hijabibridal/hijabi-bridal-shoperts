@@ -5,8 +5,8 @@ compatibility_date = "2026-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "tracker-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "520b5e26-ff99-460e-9200-398d6af2819f"
 
 [vars]
-WHATSAPP_NUMBER = "1XXXXXXXXXX"
+WHATSAPP_NUMBER = "16473317378"
 SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/REPLACE_WITH_YOUR_DEPLOYMENT_ID/exec"

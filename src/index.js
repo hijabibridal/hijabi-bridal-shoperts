@@ -21,6 +21,11 @@ export default {
   },
 };
 
+async function isBlocked(env, ref) {
+  const row = await env.DB.prepare(`SELECT 1 FROM blocked_refs WHERE ref = ?`).bind(ref).first();
+  return !!row;
+}
+
 async function handleGo(request, env, ctx, url) {
   const ref = url.searchParams.get('ref') || 'direct';
   const dest = url.searchParams.get('dest'); // 'whatsapp' | 'website'
@@ -32,26 +37,30 @@ async function handleGo(request, env, ctx, url) {
   const city = cf.city || '';
   const country = cf.country || '';
   const now = new Date().toISOString();
+  const blocked = await isBlocked(env, ref);
 
   // Log the click — D1 (structured, queryable) + Google Sheet (human-readable)
-  ctx.waitUntil(
-    env.DB.prepare(
-      `INSERT INTO clicks (id, ref, dest, timestamp, postal, city, country, converted)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 0)`
-    ).bind(clickId, ref, dest || '', now, postal, city, country).run()
-  );
-  ctx.waitUntil(
-    postToSheet(env, {
-      event: 'click',
-      clickId,
-      ref,
-      dest,
-      timestamp: now,
-      postal,
-      city,
-      country,
-    })
-  );
+  // Skipped entirely if this ref has been added to blocked_refs.
+  if (!blocked) {
+    ctx.waitUntil(
+      env.DB.prepare(
+        `INSERT INTO clicks (id, ref, dest, timestamp, postal, city, country, converted)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 0)`
+      ).bind(clickId, ref, dest || '', now, postal, city, country).run()
+    );
+    ctx.waitUntil(
+      postToSheet(env, {
+        event: 'click',
+        clickId,
+        ref,
+        dest,
+        timestamp: now,
+        postal,
+        city,
+        country,
+      })
+    );
+  }
 
   let redirectUrl;
   if (dest === 'whatsapp') {
@@ -84,6 +93,10 @@ async function handleConvert(request, env, ctx, url) {
   }
 
   const [clickId, ref] = cookie.split(':');
+  if (await isBlocked(env, ref)) {
+    return json({ tracked: false, blocked: true });
+  }
+
   const order = url.searchParams.get('order') || '';
   const amount = url.searchParams.get('amount') || '';
   const now = new Date().toISOString();
